@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrador de Terrenos con Respaldos</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+        .header-principal {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1100px;
+            margin: 0 auto 15px auto;
+        }
+        h1 { margin: 0; color: #0f172a; }
+        
+        /* Botones de Respaldo */
+        .zona-respaldo {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-respaldo {
+            background-color: #64748b;
+            font-size: 12px;
+            padding: 8px 12px;
+        }
+        .btn-respaldo:hover { background-color: #475569; }
+
+        /* Selector de Modo Inicial */
+        .selector-modo-principal {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .btn-modo {
+            padding: 12px 24px;
+            font-size: 15px;
+            background-color: #cbd5e1;
+            color: #334155;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .btn-modo.activo {
+            background-color: #0f172a;
+            color: white;
+        }
+
+        /* Paneles de Control */
+        .panel-control {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            max-width: 1100px;
+            margin: 0 auto 30px auto;
+            display: none;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+        }
+        .panel-control.activo { display: flex; }
+
+        .seccion-control {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 220px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .seccion-control h4 { margin: 0; color: #475569; font-size: 14px; text-transform: uppercase; }
+        
+        select, input, button, textarea {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+        select:focus, input:focus { border-color: #3b82f6; }
+        button {
+            background-color: #3b82f6;
+            color: white;
+            cursor: pointer;
+            border: none;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #2563eb; }
+        .btn-verde { background-color: #10b981; }
+        .btn-verde:hover { background-color: #059669; }
+        .btn-peligro { background-color: #ef4444; }
+        .btn-peligro:hover { background-color: #dc2626; }
+
+        .leyenda {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .leyenda-item { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
+        .cuadro { width: 20px; height: 20px; border-radius: 4px; }
+        .disponible-bg { background-color: #10b981; }
+        .asignado-bg { background-color: #ef4444; }
+
+        /* CONTENEDOR PRINCIPAL DEL MAPA */
+        #mapa {
+            display: flex;
+            flex-direction: column;
+            gap: 35px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* BLOQUES DE NIVEL 1 */
+        .bloque-n1 {
+            background: white;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            transition: padding 0.2s ease;
+        }
+        .bloque-n1-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #3b82f6;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        .header-izquierda {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
+        }
+        .bloque-n1-titulo { font-size: 20px; font-weight: bold; border: none; background: transparent; width: 60%; }
+        
+        .btn-minimizar {
+            background-color: #e2e8f0;
+            color: #475569;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 14px;
+            user-select: none;
+        }
+        .btn-minimizar:hover { background-color: #cbd5e1; }
+
+        .cuartel-estilo { border-color: #3b82f6; }
+        .cuartel-estilo .bloque-n1-titulo { color: #1e3a8a; }
+        .jardin-estilo { border-color: #10b981; }
+        .jardin-estilo .bloque-n1-titulo { color: #065f46; }
+
+        .bloque-n1.minimizado { padding-bottom: 5px; }
+        .bloque-n1.minimizado .bloque-n1-header { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+        .bloque-n1.minimizado .contenido-colapsable { display: none !important; }
+
+        /* BLOQUE DE NIVEL 2 */
+        .n2-contenedor { display: flex; flex-wrap: wrap; gap: 20px; }
+        .bloque-n2 {
+            background: #f8fafc;
+            border: 1px dashed #94a3b8;
+            border-radius: 10px;
+            padding: 15px;
+            flex: 1;
+            min-width: 280px;
+        }
+        .bloque-n2-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 2px solid #64748b;}
+        .bloque-n2-titulo { font-size: 16px; font-weight: bold; color: #475569; border: none; background: transparent; width: 60%; }
+
+        /* BLOQUE DE NIVEL 3 */
+        .n3-contenedor { display: flex; flex-direction: column; gap: 15px; }
+        .bloque-n3 {
+            background: #edd3ff1a;
+            border: 1px solid #c084fc;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .bloque-n3-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .bloque-n3-titulo { font-size: 14px; font-weight: 600; color: #6b21a8; border: none; background: transparent; width: 60%; }
+
+        /* LOTES */
+        .lotes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+            gap: 8px;
+        }
+        .lote {
+            padding: 10px 4px;
+            text-align: center;
+            font-weight: bold;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            font-size: 12px;
+            position: relative;
+            word-break: break-all;
+        }
+        .lote:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
+        .lote.disponible { background-color: #10b981; }
+        .lote.asignado { background-color: #ef4444; }
+        .lote.con-comentario::after { content: '💬'; position: absolute; top: 1px; right: 2px; font-size: 8px; }
+
+        /* MODAL */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-contenido { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; }
+        .modal-contenido h2 { margin-top: 0; color: #1e293b; }
+        .modal-contenido textarea { width: 100%; height: 100px; resize: none; box-sizing: border-box; margin: 10px 0 15px 0; }
+        .modal-acciones { display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+    <div class="header-principal">
+        <h1>Croquis de Terrenos e Instalaciones</h1>
+        <div class="zona-respaldo">
+            <button class="btn-respaldo" onclick="exportarDatos()">💾 Exportar Respaldo</button>
+            <button class="btn-respaldo" onclick="document.getElementById('input-importar').click()">📂 Importar Respaldo</button>
+            <input type="file" id="input-importar" style="display:none" accept=".json" onchange="importarDatos(event)">
+        </div>
+    </div>
+    
+    <div class="selector-modo-principal">
+        <button id="btn-modo-cuartel" class="btn-modo activo" onclick="cambiarModoDeTrabajo('CUARTEL')">🏢 Modo Cuarteles (4 Niveles)</button>
+        <button id="btn-modo-jardin" class="btn-modo" onclick="cambiarModoDeTrabajo('JARDIN')">🌿 Modo Jardines (3 Niveles)</button>
+    </div>
+
+    <div id="panel-cuarteles" class="panel-control activo">
+        <div class="seccion-control">
+            <h4>1. Registrar Cuartel</h4>
+            <input type="text" id="add-cuartel-nombre" placeholder="Nombre (Ej: Cuartel Norte)">
+            <button class="btn-verde" onclick="agregarCuartel()">+ Crear Cuartel</button>
+        </div>
+        <div class="seccion-control">
+            <h4>2. Registrar Manzana</h4>
+            <select id="select-cuartel" onchange="actualizarSelectores()"></select>
+            <input type="text" id="add-manzana-nombre" placeholder="Nombre (Ej: Mza 12)">
+            <button class="btn-verde" onclick="agregarManzana()">+ Crear Manzana</button>
+        </div>
+        <div class="seccion-control">
+            <h4>3. Registrar Sección</h4>
+            <select id="select-manzana"></select>
+            <input type="text" id="add-seccion-nombre" placeholder="Nombre (Ej: Sec A)">
+            <button class="btn-verde" onclick="agregarSeccionC()">+ Crear Sección</button>
+        </div>
+        <div class="seccion-control">
+            <h4>4. Registrar Lote</h4>
+            <select id="select-seccion-c"></select>
+            <input type="text" id="add-lote-c-numero" placeholder="Lote (Ej: 1A, 24)">
+            <button onclick="agregarLoteC()">+ Agregar Lote</button>
+        </div>
+    </div>
+
+    <div id="panel-jardines" class="panel-control">
+        <div class="seccion-control">
+            <h4>1. Registrar Jardín</h4>
+            <input type="text" id="add-jardin-nombre" placeholder="Nombre (Ej: Jardín de los Olivos)">
+            <button class="btn-verde" onclick="agregarJardin()">+ Crear Jardín</button>
+        </div>
+        <div class="seccion-control">
+            <h4>2. Registrar Sección</h4>
+            <select id="select-jardin"></select>
+            <input type="text" id="add-seccion-j-nombre" placeholder="Nombre (Ej: Sección Alfa)">
+            <button class="btn-verde" onclick="agregarSeccionJ()">+ Crear Sección</button>
+        </div>
+        <div class="seccion-control">
+            <h4>3. Registrar Lote</h4>
+            <select id="select-seccion-j"></select>
+            <input type="text" id="add-lote-j-numero" placeholder="Lote (Ej: A-15, 102)">
+            <button onclick="agregarLoteJ()">+ Agregar Lote</button>
+        </div>
+    </div>
+
+    <div class="leyenda">
+        <div class="leyenda-item"><div class="cuadro disponible-bg"></div> Disponible</div>
+        <div class="leyenda-item"><div class="cuadro asignado-bg"></div> Asignado / Vendido</div>
+        <div class="leyenda-item"><span>💬</span> Lote con comentarios</div>
+    </div>
+
+    <div id="mapa"></div>
+
+    <div id="modal-lote" class="modal">
+        <div class="modal-contenido">
+            <h2 id="modal-titulo">Editar Lote</h2>
+            <p id="modal-ruta" style="font-size: 13px; color: #64748b; margin-top:-10px;"></p>
+            <p><strong>Estado:</strong> <span id="modal-estado-texto"></span></p>
+            <button id="btn-cambiar-estado" onclick="cambiarEstadoModal()">Cambiar Estado / Color</button>
+            
+            <p style="margin-top: 20px; margin-bottom: 5px;"><strong>Comentarios / Notas:</strong></p>
+            <textarea id="modal-comentarios" placeholder="Historial del lote, cliente, etc..."></textarea>
+            
+            <div class="modal-acciones">
+                <button class="btn-peligro" onclick="eliminarLoteActual()">Eliminar Lote</button>
+                <div style="display: flex; gap: 10px;">
+                    <button style="background-color: #94a3b8;" onclick="cerrarModal()">Cancelar</button>
+                    <button class="btn-verde" onclick="guardarDatosLote()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let modoActivo = 'CUARTEL';
+
+        let BD = {
+            cuarteles: {},  
+            manzanas: {},   
+            seccionesC: {},  
+            lotesC: [],       
+            jardines: {},
+            seccionesJ: {},
+            lotesJ: []
+        };
+
+        let elementosMinimizados = {};
+
+        window.onload = function() {
+            const data = localStorage.getItem('croquisMultiModoData');
+            if(data) BD = JSON.parse(data);
+            
+            const modoGuardado = localStorage.getItem('croquisModoActivo');
+            if(modoGuardado) modoActivo = modoGuardado;
+
+            const minimizadosGuardados = localStorage.getItem('croquisMinimizados');
+            if(minimizadosGuardados) elementosMinimizados = JSON.parse(minimizadosGuardados);
+
+            cambiarModoDeTrabajo(modoActivo);
+        };
+
+        function guardarBD() {
+            localStorage.setItem('croquisMultiModoData', JSON.stringify(BD));
+        }
+
+        function guardarMinimizados() {
+            localStorage.setItem('croquisMinimizados', JSON.stringify(elementosMinimizados));
+        }
+
+        // --- NUEVO: FUNCIONES DE EXPORTAR E IMPORTAR ---
+        function exportarDatos() {
+            const dataStr = JSON.stringify({ BD: BD, minimizados: elementosMinimizados });
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `respaldo_croquis_${new Date().toISOString().slice(0,10)}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importarDatos(event) {
+            const archivo = event.target.files[0];
+            if (!archivo) return;
+
+            const lector = new FileReader();
+            lector.onload = function(e) {
+                try {
+                    const datosImportados = JSON.parse(e.target.result);
+                    if (datosImportados.BD) {
+                        BD = datosImportados.BD;
+                        elementosMinimizados = datosImportados.minimizados || {};
+                        guardarBD();
+                        guardarMinimizados();
+                        renderizarTodo();
+                        actualizarSelectores();
+                        alert("¡Respaldo importado con éxito!");
+                    } else {
+                        alert("El archivo no tiene el formato correcto.");
+                    }
+                } catch (error) {
+                    alert("Error al leer el archivo de respaldo.");
+                }
+            };
+            lector.readAsText(archivo);
+            event.target.value = ''; // Limpiar input para permitir cargar el mismo archivo
+        }
+
+        function toggleMinimizar(id) {
+            elementosMinimizados[id] = !elementosMinimizados[id];
+            guardarMinimizados();
+            renderizarTodo();
+        }
+
+        function ordenarLotesNaturalmente(lista) {
+            const collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
+            lista.sort((a, b) => collator.compare(a.numero, b.numero));
+        }
+
+        function cambiarModoDeTrabajo(modo) {
+            modoActivo = modo;
+            localStorage.setItem('croquisModoActivo', modo);
+
+            document.getElementById('btn-modo-cuartel').classList.toggle('activo', modo === 'CUARTEL');
+            document.getElementById('btn-modo-jardin').classList.toggle('activo', modo === 'JARDIN');
+            document.getElementById('panel-cuarteles').classList.toggle('activo', modo === 'CUARTEL');
+            document.getElementById('panel-jardines').classList.toggle('activo', modo === 'JARDIN');
+
+            actualizarSelectores();
+            renderizarTodo();
+        }
+
+        function renderizarTodo() {
+            const mapa = document.getElementById('mapa');
+            mapa.innerHTML = '';
+
+            if (modoActivo === 'CUARTEL') {
+                for (const [cId, cNombre] of Object.entries(BD.cuarteles)) {
+                    let esMinimizado = elementosMinimizados[cId] === true;
+                    let divC = document.createElement('div');
+                    divC.className = `bloque-n1 cuartel-estilo ${esMinimizado ? 'minimizado' : ''}`;
+                    
+                    divC.innerHTML = `
+                        <div class="bloque-n1-header">
+                            <div class="header-izquierda">
+                                <button class="btn-minimizar" onclick="toggleMinimizar('${cId}')">${esMinimizado ? '▲ Mostrar' : '▼ Minimizar'}</button>
+                                <input type="text" class="bloque-n1-titulo" value="${cNombre}" onchange="editarNombre('cuarteles', '${cId}', this.value)">
+                            </div>
+                            <button class="btn-peligro" style="padding:4px 8px; font-size:11px;" onclick="eliminarElemento('cuarteles', '${cId}')">Eliminar Cuartel</button>
+                        </div>
+                        <div class="n2-contenedor contenido-colapsable" id="manzanas-de-${cId}"></div>
+                    `;
+                    mapa.appendChild(divC);
+                }
+
+                for (const [mId, mData] of Object.entries(BD.manzanas)) {
+                    const cont = document.getElementById(`manzanas-de-${mData.cuartelId}`);
+                    if (cont) {
+                        let divM = document.createElement('div');
+                        divM.className = 'bloque-n2';
+                        divM.innerHTML = `
+                            <div class="bloque-n2-header">
+                                <input type="text" class="bloque-n2-titulo" value="${mData.nombre}" onchange="editarNombre('manzanas', '${mId}', this.value)">
+                                <button class="btn-peligro" style="padding:2px 6px; font-size:10px;" onclick="eliminarElemento('manzanas', '${mId}')">X</button>
+                            </div>
+                            <div class="n3-contenedor" id="seccionesC-de-${mId}"></div>
+                        `;
+                        cont.appendChild(divM);
+                    }
+                }
+
+                for (const [sId, sData] of Object.entries(BD.seccionesC)) {
+                    const cont = document.getElementById(`seccionesC-de-${sData.manzanaId}`);
+                    if (cont) {
+                        let divS = document.createElement('div');
+                        divS.className = 'bloque-n3';
+                        divS.innerHTML = `
+                            <div class="bloque-n3-header">
+                                <input type="text" class="bloque-n3-titulo" value="${sData.nombre}" onchange="editarNombre('seccionesC', '${sId}', this.value)">
+                                <button class="btn-peligro" style="padding:2px 5px; font-size:9px;" onclick="eliminarElemento('seccionesC', '${sId}')">X</button>
+                            </div>
+                            <div class="lotes-grid" id="lotesC-de-${sId}"></div>
+                        `;
+                        cont.appendChild(divS);
+                    }
+                }
+
+                ordenarLotesNaturalmente(BD.lotesC);
+                BD.lotesC.forEach(lote => {
+                    const grid = document.getElementById(`lotesC-de-${lote.seccionId}`);
+                    if (grid) {
+                        let divL = document.createElement('div');
+                        divL.className = `lote ${lote.estado}`;
+                        if(lote.comentario && lote.comentario.trim() !== "") divL.classList.add('con-comentario');
+                        divL.innerText = lote.numero;
+                        divL.onclick = function() { abrirModal(lote.id, 'CUARTEL'); };
+                        grid.appendChild(divL);
+                    }
+                });
+
+            } else {
+                for (const [jId, jNombre] of Object.entries(BD.jardines)) {
+                    let esMinimizado = elementosMinimizados[jId] === true;
+                    let divJ = document.createElement('div');
+                    divJ.className = `bloque-n1 jardin-estilo ${esMinimizado ? 'minimizado' : ''}`;
+                    
+                    divJ.innerHTML = `
+                        <div class="bloque-n1-header">
+                            <div class="header-izquierda">
+                                <button class="btn-minimizar" onclick="toggleMinimizar('${jId}')">${esMinimizado ? '▲ Mostrar' : '▼ Minimizar'}</button>
+                                <input type="text" class="bloque-n1-titulo" value="${jNombre}" onchange="editarNombre('jardines', '${jId}', this.value)">
+                            </div>
+                            <button class="btn-peligro" style="padding:4px 8px; font-size:11px;" onclick="eliminarElemento('jardines', '${jId}')">Eliminar Jardín</button>
+                        </div>
+                        <div class="n3-contenedor contenido-colapsable" id="seccionesJ-de-${jId}" style="gap:20px;"></div>
+                    `;
+                    mapa.appendChild(divJ);
+                }
+
+                for (const [sId, sData] of Object.entries(BD.seccionesJ)) {
+                    const cont = document.getElementById(`seccionesJ-de-${sData.jardinId}`);
+                    if (cont) {
+                        let divS = document.createElement('div');
+                        divS.className = 'bloque-n3';
+                        divS.innerHTML = `
+                            <div class="bloque-n3-header">
+                                <input type="text" class="bloque-n3-titulo" value="${sData.nombre}" onchange="editarNombre('seccionesJ', '${sId}', this.value)">
+                                <button class="btn-peligro" style="padding:2px 5px; font-size:9px;" onclick="eliminarElemento('seccionesJ', '${sId}')">X</button>
+                            </div>
+                            <div class="lotes-grid" id="lotesJ-de-${sId}"></div>
+                        `;
+                        cont.appendChild(divS);
+                    }
+                }
+
+                ordenarLotesNaturalmente(BD.lotesJ);
+                BD.lotesJ.forEach(lote => {
+                    const grid = document.getElementById(`lotesJ-de-${lote.seccionId}`);
+                    if (grid) {
+                        let divL = document.createElement('div');
+                        divL.className = `lote ${lote.estado}`;
+                        if(lote.comentario && lote.comentario.trim() !== "") divL.classList.add('con-comentario');
+                        divL.innerText = lote.numero;
+                        divL.onclick = function() { abrirModal(lote.id, 'JARDIN'); };
+                        grid.appendChild(divL);
+                    }
+                });
+            }
+        }
+
+        function actualizarSelectores() {
+            if (modoActivo === 'CUARTEL') {
+                const selCuartel = document.getElementById('select-cuartel');
+                const selManzana = document.getElementById('select-manzana');
+                const selSeccionC = document.getElementById('select-seccion-c');
+                const cSel = selCuartel.value;
+                const mSel = selManzana.value;
+
+                selCuartel.innerHTML = '';
+                for (const [id, nombre] of Object.entries(BD.cuarteles)) selCuartel.add(new Option(nombre, id));
+                if(cSel && BD.cuarteles[cSel]) selCuartel.value = cSel;
+
+                selManzana.innerHTML = '';
+                for (const [id, mData] of Object.entries(BD.manzanas)) {
+                    if(mData.cuartelId === selCuartel.value) selManzana.add(new Option(mData.nombre, id));
+                }
+                if(mSel && BD.manzanas[mSel] && BD.manzanas[mSel].cuartelId === selCuartel.value) selManzana.value = mSel;
+
+                selSeccionC.innerHTML = '';
+                for (const [id, sData] of Object.entries(BD.seccionesC)) {
+                    if(sData.manzanaId === selManzana.value) {
+                        const mNom = BD.manzanas[sData.manzanaId].nombre;
+                        selSeccionC.add(new Option(`${mNom} -> ${sData.nombre}`, id));
+                    }
+                }
+            } else {
+                const selJardin = document.getElementById('select-jardin');
+                const selSeccionJ = document.getElementById('select-seccion-j');
+                const jSel = selJardin.value;
+
+                selJardin.innerHTML = '';
+                for (const [id, nombre] of Object.entries(BD.jardines)) selJardin.add(new Option(nombre, id));
+                if(jSel && BD.jardines[jSel]) selJardin.value = jSel;
+
+                selSeccionJ.innerHTML = '';
+                for (const [id, sData] of Object.entries(BD.seccionesJ)) {
+                    if(sData.jardinId === selJardin.value) selSeccionJ.add(new Option(sData.nombre, id));
+                }
+            }
+        }
+
+        // --- ALTAS MODO CUARTEL ---
+        function agregarCuartel() {
+            const nom = document.getElementById('add-cuartel-nombre').value.trim();
+            if(!nom) return alert("Escribe nombre del Cuartel");
+            BD.cuarteles['c-' + Date.now()] = nom;
+            document.getElementById('add-cuartel-nombre').value = '';
+            guardarBD(); renderizarTodo(); actualizarSelectores();
+        }
+        function agregarManzana() {
+            const cId = document.getElementById('select-cuartel').value;
+            const nom = document.getElementById('add-manzana-nombre').value.trim();
+            if(!cId || !nom) return alert("Verifica los datos de la Manzana");
+            BD.manzanas['m-' + Date.now()] = { cuartelId: cId, nombre: nom };
+            document.getElementById('add-manzana-nombre').value = '';
+            guardarBD(); renderizarTodo(); actualizarSelectores();
+        }
+        function agregarSeccionC() {
+            const mId = document.getElementById('select-manzana').value;
+            const nom = document.getElementById('add-seccion-nombre').value.trim();
+            if(!mId || !nom) return alert("Verifica los datos de la Sección");
+            BD.seccionesC['sc-' + Date.now()] = { manzanaId: mId, nombre: nom };
+            document.getElementById('add-seccion-nombre').value = '';
+            guardarBD(); renderizarTodo(); actualizarSelectores();
+        }
+        function agregarLoteC() {
+            const sId = document.getElementById('select-seccion-c').value;
+            const num = document.getElementById('add-lote-c-numero').value.trim();
+            if(!sId || !num) return alert("Verifica los datos del Lote");
+            if(BD.lotesC.some(l => l.seccionId === sId && l.numero.toUpperCase() === num.toUpperCase())) return alert("El lote ya existe");
+            
+            BD.lotesC.push({ id: 'lc-' + Date.now(), seccionId: sId, numero: num, estado: 'disponible', comentario: '' });
+            document.getElementById('add-lote-c-numero').value = '';
+            guardarBD(); renderizarTodo();
+        }
+
+        // --- ALTAS MODO JARDÍN ---
+        function agregarJardin() {
+            const nom = document.getElementById('add-jardin-nombre').value.trim();
+            if(!nom) return alert("Escribe el nombre del Jardín");
+            BD.jardines['j-' + Date.now()] = nom;
+            document.getElementById('add-jardin-nombre').value = '';
+            guardarBD(); renderizarTodo(); actualizarSelectores();
+        }
+        function agregarSeccionJ() {
+            const jId = document.getElementById('select-jardin').value;
+            const nom = document.getElementById('add-seccion-j-nombre').value.trim();
+            if(!jId || !nom) return alert("Verifica los datos de la Sección");
+            BD.seccionesJ['sj-' + Date.now()] = { jardinId: jId, nombre: nom };
+            document.getElementById('add-seccion-j-nombre').value = '';
+            guardarBD(); renderizarTodo(); actualizarSelectores();
+        }
+        function agregarLoteJ() {
+            const sId = document.getElementById('select-seccion-j').value;
+            const num = document.getElementById('add-lote-j-numero').value.trim();
+            if(!sId || !num) return alert("Verifica los datos del Lote");
+            if(BD.lotesJ.some(l => l.seccionId === sId && l.numero.toUpperCase() === num.toUpperCase())) return alert("El lote ya existe");
+            
+            BD.lotesJ.push({ id: 'lj-' + Date.now(), seccionId: sId, numero: num, estado: 'disponible', comentario: '' });
+            document.getElementById('add-lote-j-numero').value = '';
+            guardarBD(); renderizarTodo();
+        }
+
+        function editarNombre(tipo, id, nuevoValor) {
+            if(!nuevoValor.trim()) return;
+            if(tipo === 'cuarteles' || tipo === 'jardines') BD[tipo][id] = nuevoValor.trim();
+            else BD[tipo][id].nombre = nuevoValor.trim();
+            guardarBD(); actualizarSelectores();
+        }
+
+        function eliminarElemento(tipo, id) {
+            if(!confirm("¿Seguro que deseas eliminar este elemento? Perderás todo lo que contenga.")) return;
+            
+            if(tipo === 'cuarteles') {
+                delete BD.cuarteles[id]; delete elementosMinimizados[id];
+                for(let mId in BD.manzanas) if(BD.manzanas[mId].cuartelId === id) eliminarCascadaMza(mId);
+            } else if(tipo === 'manzanas') {
+                eliminarCascadaMza(id);
+            } else if(tipo === 'seccionesC') {
+                delete BD.seccionesC[id]; BD.lotesC = BD.lotesC.filter(l => l.seccionId !== id);
+            } else if(tipo === 'jardines') {
+                delete BD.jardines[id]; delete elementosMinimizados[id];
+                for(let sId in BD.seccionesJ) if(BD.seccionesJ[sId].jardinId === id) { delete BD.seccionesJ[sId]; BD.lotesJ = BD.lotesJ.filter(l => l.seccionId !== sId); }
+            } else if(tipo === 'seccionesJ') {
+                delete BD.seccionesJ[id]; BD.lotesJ = BD.lotesJ.filter(l => l.seccionId !== id);
+            }
+            guardarMinimizados(); guardarBD(); renderizarTodo(); actualizarSelectores();
+        }
+        function eliminarCascadaMza(mId) {
+            delete BD.manzanas[mId];
+            for(let sId in BD.seccionesC) if(BD.seccionesC[sId].manzanaId === mId) { delete BD.seccionesC[sId]; BD.lotesC = BD.lotesC.filter(l => l.seccionId !== sId); }
+        }
+
+        let loteActivoId = null;
+        let loteActivoModo = null;
+
+        function abrirModal(id, modoLote) {
+            loteActivoId = id; loteActivoModo = modoLote;
+            let lote, rutaTexto;
+            if(modoLote === 'CUARTEL') {
+                lote = BD.lotesC.find(l => l.id === id);
+                let s = BD.seccionesC[lote.seccionId]; let m = BD.manzanas[s.manzanaId]; let c = BD.cuarteles[m.cuartelId];
+                rutaTexto = `${c} ➔ ${m.nombre} ➔ ${s.nombre}`;
+            } else {
+                lote = BD.lotesJ.find(l => l.id === id);
+                let s = BD.seccionesJ[lote.seccionId]; let j = BD.jardines[s.jardinId];
+                rutaTexto = `${j} ➔ ${s.nombre}`;
+            }
+
+            document.getElementById('modal-titulo').innerText = `Lote ${lote.numero}`;
+            document.getElementById('modal-ruta').innerText = rutaTexto;
+            document.getElementById('modal-comentarios').value = lote.comentario || '';
+            actualizarModalEstado(lote.estado);
+            document.getElementById('modal-lote').style.display = 'flex';
+        }
+
+        function actualizarModalEstado(estado) {
+            const txt = document.getElementById('modal-estado-texto');
+            const btn = document.getElementById('btn-cambiar-estado');
+            txt.innerText = estado.toUpperCase();
+            if(estado === 'disponible') {
+                txt.style.color = '#10b981'; btn.innerText = "Marcar como ASIGNADO"; btn.className = "btn-peligro";
+            } else {
+                txt.style.color = '#ef4444'; btn.innerText = "Marcar como DISPONIBLE"; btn.className = "btn-verde";
+            }
+        }
+
+        function cambiarEstadoModal() {
+            let lista = (loteActivoModo === 'CUARTEL') ? BD.lotesC : BD.lotesJ;
+            let lote = lista.find(l => l.id === loteActivoId);
+            lote.estado = (lote.estado === 'disponible') ? 'asignado' : 'disponible';
+            actualizarModalEstado(lote.estado);
+        }
+
+        function guardarDatosLote() {
+            let lista = (loteActivoModo === 'CUARTEL') ? BD.lotesC : BD.lotesJ;
+            let lote = lista.find(l => l.id === loteActivoId);
+            lote.comentario = document.getElementById('modal-comentarios').value;
+            guardarBD(); renderizarTodo(); cerrarModal();
+        }
+
+        function eliminarLoteActual() {
+            if(confirm("¿Eliminar este lote?")) {
+                if(loteActivoModo === 'CUARTEL') BD.lotesC = BD.lotesC.filter(l => l.id !== loteActivoId);
+                else BD.lotesJ = BD.lotesJ.filter(l => l.id !== loteActivoId);
+                guardarBD(); renderizarTodo(); cerrarModal();
+            }
+        }
+        function cerrarModal() { document.getElementById('modal-lote').style.display = 'none'; }
+    </script>
+</body>
+</html>
