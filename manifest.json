@@ -1,0 +1,18 @@
+{
+  "name": "Administrador de Terrenos",
+  "short_name": "CroquisTerrenos",
+  "description": "Sistema interactivo para la gestión de cuarteles, jardines y lotes.",
+  "start_url": "./croquis.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/814/814404.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
